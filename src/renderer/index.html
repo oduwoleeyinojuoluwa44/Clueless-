@@ -47,6 +47,23 @@
         padding: 14px;
       }
 
+      body[data-collapsed="on"] {
+        padding: 8px;
+      }
+
+      /* collapsed: show only the small nub, hide the full panel */
+      .nub {
+        display: none;
+      }
+
+      body[data-collapsed="on"] .panel {
+        display: none;
+      }
+
+      body[data-collapsed="on"] .nub {
+        display: inline-flex;
+      }
+
       /* When protection is ON, selection still works (copy/paste is fine) but
          the blue highlight is hidden so selecting text gives nothing away. */
       body[data-enabled="on"] ::selection {
@@ -168,6 +185,65 @@
       .toggle svg {
         width: 16px;
         height: 16px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      /* the collapsed nub — a tiny always-clickable glass pill */
+      .nub {
+        align-items: center;
+        gap: 8px;
+        padding: 9px 14px;
+        border-radius: 999px;
+        border: 1px solid var(--panel-border);
+        background: var(--panel-bg);
+        -webkit-backdrop-filter: var(--glass-blur);
+        backdrop-filter: var(--glass-blur);
+        box-shadow:
+          0 16px 40px rgba(0, 0, 0, 0.45),
+          inset 0 1px 0 var(--glass-highlight);
+        color: var(--text);
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        cursor: move;
+        -webkit-app-region: drag;
+        animation: float-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+      }
+
+      .nub:hover {
+        border-color: rgba(255, 184, 74, 0.5);
+      }
+
+      .nub .spark {
+        color: var(--accent-strong);
+      }
+
+      .nub-label {
+        margin-right: 2px;
+      }
+
+      /* the only no-drag target on the nub: click to expand */
+      .nub-expand {
+        -webkit-app-region: no-drag;
+        width: 26px;
+        height: 26px;
+        padding: 0;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: none;
+      }
+
+      .nub-expand svg {
+        width: 14px;
+        height: 14px;
         fill: none;
         stroke: currentColor;
         stroke-width: 1.8;
@@ -345,17 +421,17 @@
       <div class="bar">
         <div class="brand"><span class="spark">✦</span>Clueeless</div>
         <button
-          id="toggle-protection"
+          id="toggle-collapse"
           class="toggle"
-          data-state="off"
-          title="Toggle hide from screen capture"
+          data-state="on"
+          title="Hide to a small nub"
         >
           <span class="dot" id="support-dot" data-level="none"></span>
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z" />
             <circle cx="12" cy="12" r="3.5" />
           </svg>
-          <span id="protection-status">Visible</span>
+          <span id="collapse-label">Hide</span>
         </button>
       </div>
 
@@ -373,6 +449,17 @@
         </div>
         <div class="answer" id="answer" data-state="idle">Waiting for a prompt.</div>
       </div>
+    </div>
+
+    <div id="nub" class="nub" title="Drag to move">
+      <span class="dot" id="nub-dot" data-level="none"></span>
+      <span class="spark">✦</span>
+      <span class="nub-label">Clueeless</span>
+      <button id="nub-expand" class="nub-expand" title="Show Clueeless" aria-label="Show">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 14v6h6M20 10V4h-6M14 10l6-6M10 14l-6 6" />
+        </svg>
+      </button>
     </div>
     <script type="module" src="./renderer.js"></script>
   </body>

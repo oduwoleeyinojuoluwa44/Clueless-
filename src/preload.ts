@@ -8,6 +8,7 @@ type StatusPayload = {
   autoHideEnabled: boolean;
   shareGuardActive: boolean;
   isHidden: boolean;
+  collapsed: boolean;
   protectionSupport: ProtectionSupport;
   protectionDetail: string;
   protectionError: string | null;
@@ -31,6 +32,7 @@ type AskResult = {
 
 const api = {
   toggleProtection: () => ipcRenderer.invoke('toggle-protection') as Promise<StatusPayload>,
+  toggleCollapse: () => ipcRenderer.invoke('toggle-collapse') as Promise<StatusPayload>,
   toggleAutoHide: () => ipcRenderer.invoke('toggle-auto-hide') as Promise<StatusPayload>,
   getStatus: () => ipcRenderer.invoke('get-status') as Promise<StatusPayload>,
   getAiConfig: () => ipcRenderer.invoke('get-ai-config') as Promise<AiConfigPayload>,

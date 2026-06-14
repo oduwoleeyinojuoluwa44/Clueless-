@@ -11,6 +11,7 @@ type StatusPayload = {
   autoHideEnabled: boolean;
   shareGuardActive: boolean;
   isHidden: boolean;
+  collapsed: boolean;
   protectionSupport: ProtectionSupport;
   protectionDetail: string;
   protectionError: string | null;
@@ -43,8 +44,15 @@ type AskResult = {
   model?: string;
 };
 
+// Capture-stealth is the whole point of the app, so it stays ON by default.
+// "Hide" no longer means a vanishing window (you could never click it back) —
+// it collapses the panel to a small nub that is always visible and clickable.
+const EXPANDED_SIZE = { width: 460, height: 520 };
+const COLLAPSED_SIZE = { width: 184, height: 60 };
+
 let mainWindow: BrowserWindow | null = null;
-let manualProtectionEnabled = false;
+let manualProtectionEnabled = true;
+let collapsed = false;
 let autoHideEnabled = false;
 let shareGuardActive = false;
 let userHidden = false;
@@ -322,6 +330,7 @@ const getStatusPayload = (): StatusPayload => {
     autoHideEnabled,
     shareGuardActive,
     isHidden,
+    collapsed,
     protectionSupport: support.level,
     protectionDetail: support.detail,
     protectionError: lastProtectionError,
@@ -362,11 +371,23 @@ const applyWindowState = () => {
     }
   }
 
-  if (isHidden) {
-    if (mainWindow.isVisible()) {
-      mainWindow.hide();
+  // Collapse to a small nub instead of hiding the window outright, so it's
+  // always on screen and one click away from coming back. The window must
+  // physically shrink — otherwise the old full-size (transparent) window keeps
+  // swallowing clicks meant for whatever is behind it.
+  const size = collapsed ? COLLAPSED_SIZE : EXPANDED_SIZE;
+  const [currentWidth, currentHeight] = mainWindow.getSize();
+  if (currentWidth !== size.width || currentHeight !== size.height) {
+    // setSize is ignored on Windows while resizable is false, so flip it
+    // around the resize and put it back.
+    const wasResizable = mainWindow.isResizable();
+    if (!wasResizable) {
+      mainWindow.setResizable(true);
     }
-    return;
+    mainWindow.setSize(size.width, size.height);
+    if (!wasResizable) {
+      mainWindow.setResizable(false);
+    }
   }
 
   if (!mainWindow.isVisible()) {
@@ -424,6 +445,13 @@ const createWindow = () => {
 
   emitStatus();
 };
+
+ipcMain.handle('toggle-collapse', () => {
+  collapsed = !collapsed;
+  applyWindowState();
+  emitStatus();
+  return getStatusPayload();
+});
 
 ipcMain.handle('toggle-protection', () => {
   manualProtectionEnabled = !manualProtectionEnabled;
@@ -486,7 +514,7 @@ app.whenReady().then(() => {
   startShareGuard();
 
   globalShortcut.register('CommandOrControl+Shift+H', () => {
-    userHidden = !userHidden;
+    collapsed = !collapsed;
     applyWindowState();
     emitStatus();
   });

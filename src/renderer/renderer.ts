@@ -2,6 +2,7 @@ declare global {
   interface Window {
     clueless: {
       toggleProtection: () => Promise<StatusPayload>;
+      toggleCollapse: () => Promise<StatusPayload>;
       toggleAutoHide: () => Promise<StatusPayload>;
       getStatus: () => Promise<StatusPayload>;
       getAiConfig: () => Promise<AiConfigPayload>;
@@ -19,6 +20,7 @@ type StatusPayload = {
   autoHideEnabled: boolean;
   shareGuardActive: boolean;
   isHidden: boolean;
+  collapsed: boolean;
   protectionSupport: ProtectionSupport;
   protectionDetail: string;
   protectionError: string | null;
@@ -40,9 +42,11 @@ type AskResult = {
   model?: string;
 };
 
-const protectionEl = document.getElementById('protection-status');
+const collapseLabel = document.getElementById('collapse-label');
 const supportDot = document.getElementById('support-dot');
-const protectionBtn = document.getElementById('toggle-protection');
+const nubDot = document.getElementById('nub-dot');
+const collapseBtn = document.getElementById('toggle-collapse');
+const nubExpand = document.getElementById('nub-expand');
 const promptInput = document.getElementById('prompt-input');
 const askBtn = document.getElementById('ask-button');
 const clearBtn = document.getElementById('clear-button');
@@ -51,9 +55,11 @@ const aiMetaEl = document.getElementById('ai-meta');
 const aiStatusEl = document.getElementById('ai-status');
 
 if (
-  !(protectionEl instanceof HTMLElement) ||
+  !(collapseLabel instanceof HTMLElement) ||
   !(supportDot instanceof HTMLElement) ||
-  !(protectionBtn instanceof HTMLButtonElement) ||
+  !(nubDot instanceof HTMLElement) ||
+  !(collapseBtn instanceof HTMLButtonElement) ||
+  !(nubExpand instanceof HTMLButtonElement) ||
   !(promptInput instanceof HTMLTextAreaElement) ||
   !(askBtn instanceof HTMLButtonElement) ||
   !(clearBtn instanceof HTMLButtonElement) ||
@@ -66,19 +72,21 @@ if (
 
 const setUi = (status: StatusPayload) => {
   document.body.dataset.enabled = status.effectiveProtection ? 'on' : 'off';
-  protectionBtn.dataset.state = status.effectiveProtection ? 'on' : 'off';
-  protectionEl.textContent = status.effectiveProtection ? 'Hidden' : 'Visible';
+  document.body.dataset.collapsed = status.collapsed ? 'on' : 'off';
+  collapseBtn.dataset.state = status.effectiveProtection ? 'on' : 'off';
+  collapseLabel.textContent = 'Hide';
 
   // The dot keeps the honest signal: green = OS can exclude us, amber = weak,
   // red = unsupported. Full detail lives in the tooltip, not as on-screen clutter.
   supportDot.dataset.level = status.protectionSupport;
+  nubDot.dataset.level = status.protectionSupport;
   let tooltip = status.protectionDetail;
   if (status.protectionError) {
     tooltip = `Protection failed to apply: ${status.protectionError}`;
   } else if (status.effectiveProtection && status.protectionSupport !== 'full') {
-    tooltip = `ON but NOT reliable here — you may still be visible. ${status.protectionDetail}`;
+    tooltip = `Stealth ON but NOT reliable here — you may still be visible. ${status.protectionDetail}`;
   }
-  protectionBtn.title = tooltip;
+  collapseBtn.title = tooltip;
 };
 
 const updateAiMeta = (config: AiConfigPayload) => {
@@ -143,8 +151,13 @@ const init = async () => {
   setAnswer('Ask anything. Enter to send, Shift+Enter for a new line.', 'idle');
 };
 
-protectionBtn.addEventListener('click', async () => {
-  const status = await window.clueless.toggleProtection();
+collapseBtn.addEventListener('click', async () => {
+  const status = await window.clueless.toggleCollapse();
+  setUi(status);
+});
+
+nubExpand.addEventListener('click', async () => {
+  const status = await window.clueless.toggleCollapse();
   setUi(status);
 });
 
